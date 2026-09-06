@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;;
+            height: 76vh; /* 使内容垂直居中 */
+            background-color: #f0f0f000; /* 背景色，方便查看效果 */
+        }
+        /* 修改后的样式 */
+        .typing-container {
+            font-family: monospace;
+            font-size: 24px;
+            color: #666; /* 添加文字灰色 */
+        }
+        
+        .typing-text::after {
+            content: "|";
+            animation: blink 1s infinite;
+            color: #c3ff00; /* 荧光绿色光标 */
+            /*font-weight: bold; /* 加粗光标 */
+            text-shadow: 
+                -1px -1px 0 #666, /* 左上黑色描边 */
+                1px -1px 0 #666,  /* 右上黑色描边 */
+                -1px 1px 0 #666,  /* 左下黑色描边 */
+                1px 1px 0 #666;   /* 右下黑色描边 */
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="typing-container">
+        <span class="typing-text"></span>
+    </div>
+
+    <script>
+        const texts = ["Designer", "Programmer","Architect","Developer","Postgraduate","Instructor","Naturalist"]; // 要显示的文本数组
+        let textIndex = 0;
+        let charIndex = 0;
+        let isDeleting = false;
+        const element = document.querySelector('.typing-text');
+        
+        function getRandomSpeed(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+    function typeEffect() {
+        const currentText = texts[textIndex];
+        
+        if (!isDeleting) {
+            // 打字效果
+            element.textContent = currentText.substring(0, charIndex + 1);
+            charIndex++;
+            
+            if (charIndex === currentText.length) {
+                isDeleting = true;
+                setTimeout(typeEffect, 1500); // 显示完整文本的停留时间
+            } else {
+                const speed = getRandomSpeed(150, 260); // 随机速度
+                setTimeout(typeEffect, speed);
+            }
+        } else {
+            // 删除效果
+            element.textContent = currentText.substring(0, charIndex - 1);
+            charIndex--;
+            
+            if (charIndex === 0) {
+                isDeleting = false;
+                textIndex = (textIndex + 1) % texts.length; // 循环切换文本
+                setTimeout(typeEffect, 500); // 切换到下一个文本前的延迟
+            } else {
+                const speed = getRandomSpeed(100,105); // 随机速度
+                setTimeout(typeEffect, speed);
+            }
+        }
+        }
+
+        // 启动动画
+        setTimeout(typeEffect, 500);
+    </script>
+</body>
+</html>

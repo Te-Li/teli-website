@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Flocking Boids Simulation</title>
+    <style>
+        canvas {
+            border: 0px solid #bababa;
+            background: #00000000;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            margin: 0px;
+            overflow: hidden;
+            background: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="flockCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById("flockCanvas");
+        const ctx = canvas.getContext("2d");
+
+        function resizeCanvas() {
+            canvas.width = document.documentElement.clientWidth * 1;
+            canvas.height = document.documentElement.clientHeight * 1;
+        }
+        
+        window.addEventListener("resize", resizeCanvas);
+        resizeCanvas();
+
+        const BOID_COUNT = 180;
+        const MAX_SPEED = 0.5;
+        const FORCE_FACTOR = 0.02;
+        const NEIGHBOR_RADIUS = 70;
+        const AVOID_RADIUS = 20;
+        const SEPARATION_WEIGHT = 4;
+
+        class Boid {
+            constructor() {
+                this.position = {
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height
+                };
+                this.velocity = {
+                    x: Math.random() * 2 - 1,
+                    y: Math.random() * 2 - 1
+                };
+
+                this.color = Math.random() < 0.9 ? "#000" : "#bababa";
+            }
+
+            update(boids) {
+                const alignment = this.align(boids);
+                const cohesion = this.cohere(boids);
+                const separation = this.separate(boids);
+
+                this.velocity.x += (alignment.x + cohesion.x + separation.x) * FORCE_FACTOR;
+                this.velocity.y += (alignment.y + cohesion.y + separation.y) * FORCE_FACTOR;
+
+                const speed = Math.sqrt(this.velocity.x**2 + this.velocity.y**2);
+                if (speed > MAX_SPEED) {
+                    this.velocity.x = (this.velocity.x / speed) * MAX_SPEED;
+                    this.velocity.y = (this.velocity.y / speed) * MAX_SPEED;
+                }
+
+                this.position.x += this.velocity.x;
+                this.position.y += this.velocity.y;
+
+                if (this.position.x < 0) this.position.x = canvas.width;
+                if (this.position.x > canvas.width) this.position.x = 0;
+                if (this.position.y < 0) this.position.y = canvas.height;
+                if (this.position.y > canvas.height) this.position.y = 0;
+            }
+
+            align(boids) {
+                const steering = { x: 0, y: 0 };
+                let total = 0;
+                for (const other of boids) {
+                    const dist = this.distance(other);
+                    if (dist > 0 && dist < NEIGHBOR_RADIUS) {
+                        steering.x += other.velocity.x;
+                        steering.y += other.velocity.y;
+                        total++;
+                    }
+                }
+                if (total > 0) {
+                    steering.x /= total;
+                    steering.y /= total;
+                }
+                return steering;
+            }
+
+            cohere(boids) {
+                const steering = { x: 0, y: 0 };
+                let total = 0;
+                for (const other of boids) {
+                    const dist = this.distance(other);
+                    if (dist > 0 && dist < NEIGHBOR_RADIUS) {
+                        steering.x += other.position.x;
+                        steering.y += other.position.y;
+                        total++;
+                    }
+                }
+                if (total > 0) {
+                    steering.x = (steering.x / total - this.position.x) * 0.03;
+                    steering.y = (steering.y / total - this.position.y) * 0.03;
+                }
+                return steering;
+            }
+
+            separate(boids) {
+                const steering = { x: 0, y: 0 };
+                let total = 0;
+                for (const other of boids) {
+                    const dist = this.distance(other);
+                    if (dist > 0 && dist < AVOID_RADIUS) {
+                        steering.x += (this.position.x - other.position.x) / dist;
+                        steering.y += (this.position.y - other.position.y) / dist;
+                        total++;
+                    }
+                }
+                if (total > 0) {
+                    steering.x = (steering.x / total) * SEPARATION_WEIGHT;
+                    steering.y = (steering.y / total) * SEPARATION_WEIGHT;
+                }
+                return steering;
+            }
+
+            distance(other) {
+                const dx = other.position.x - this.position.x;
+                const dy = other.position.y - this.position.y;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+
+            draw() {
+                const angle = Math.atan2(this.velocity.y, this.velocity.x);
+                ctx.save();
+                ctx.translate(this.position.x, this.position.y);
+                ctx.rotate(angle);
+
+                ctx.beginPath();
+                ctx.moveTo(6, 0);
+                ctx.lineTo(-4, 4);
+                ctx.lineTo(-2, 0);
+                ctx.lineTo(-4, -4);
+                ctx.closePath();
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 0.7;
+                ctx.stroke();
+
+                ctx.restore();
+            }
+        }
+
+        const boids = Array(BOID_COUNT).fill().map(() => new Boid());
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            boids.forEach(boid => {
+                boid.update(boids);
+                boid.draw();
+            });
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        canvas.addEventListener("click", (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const newBoid = new Boid();
+            newBoid.position.x = e.clientX - rect.left;
+            newBoid.position.y = e.clientY - rect.top;
+            boids.push(newBoid);
+        });
+    </script>
+</body>
+</html>
